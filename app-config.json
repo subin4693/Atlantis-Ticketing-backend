@@ -1,0 +1,13 @@
+{
+	"command": "node server.js",
+	"build_path": "/mnt/DA4A8D6F4A8D4969/internship/Event-clone/server",
+	"stack": "node18",
+	"env_variables": {
+		"NODE_ENV": "development",
+		"DATABASE_LOCALLL": "mongodb://localhost:27017/Qatar-event-hub",
+		"DATABASE_LOCAL": "mongodb+srv://subin:Password@cluster0.tvgqpfe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0/Qatareventhub",
+		"PORT": "8081"
+	},
+	"memory": 256,
+	"scripts": {}
+}
