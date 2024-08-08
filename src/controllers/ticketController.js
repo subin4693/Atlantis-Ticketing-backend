@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 const signature = `
     <div style="margin-left: 10px;">
         <p style="font-family: Arial, sans-serif; color: #333;"><b>Best regards,</b></p>
-        <p style="font-family: Arial, sans-serif; color: #333;"><b>Qatar Event Hub</b></p>
+        <p style="font-family: Arial, sans-serif; color: #333;"><b>Atlantis</b></p>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; padding: 10px;">
     <div style="display: flex; align-items: center;">
