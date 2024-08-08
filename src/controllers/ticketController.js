@@ -22,9 +22,9 @@ const signature = `
     </div>
     <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; padding: 10px;">
     <div style="display: flex; align-items: center;">
-        <img src="https://wallpaperaccess.com/full/8128266.jpg" alt="Signature Image" style="width: 100px; height: 100px; margin-right: 10px;">
+        <img src="https://cdn2.advanceinfotech.org/doha.directory/1200x675/business/2278/futad-advertising-qatar-1657866216.webp" style="width: 100px; height: 100px; margin-right: 10px;">
         <h1 style="color: #921A40; font-size: 2rem; margin: 0;">
-            <b>Qatar Event Hub</b>
+            <b>Atlantis</b>
         </h1>
     </div>
 </div>
