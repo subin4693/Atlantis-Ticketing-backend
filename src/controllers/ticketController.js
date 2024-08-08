@@ -99,9 +99,7 @@ exports.bookTickets = catchAsync(async (req, res, next) => {
   <h4 style="font-family: Arial, sans-serif; color: #333;">
       Total Amount: ${totalCost}  QAR
   </h4>
-  <h4 style="font-family: Arial, sans-serif; color: #333;">
-      Category:  
-  </h4>
+  
   <br>
   ${signature}
 `;
