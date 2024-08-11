@@ -42,72 +42,104 @@ exports.getTicketTypes = catchAsync(async (req, res, next) => {
 });
 
 exports.bookTickets = catchAsync(async (req, res, next) => {
-  const { eventId, emailId, tickets } = req.body;
+  try {
+    const { eventId, emailId, tickets, promoCode } = req.body;
 
-  if (!eventId || !emailId || !tickets || !Array.isArray(tickets)) {
-    return next(new AppError(400, "Invalid data"));
+    if (!eventId || !emailId || !tickets || !Array.isArray(tickets)) {
+      return next(new AppError(400, "Invalid data"));
+    }
+
+    const ticketTypes = await TicketType.find({ _id: { $in: tickets.map((ticket) => ticket.type) } });
+    if (ticketTypes.length !== tickets.length) return next(new AppError(400, "Invalid tickets"));
+
+    let totalQuantity = 0, totalCost = 0;
+
+    const ticketDetails = tickets.map((ticket) => {
+      const ticketType = ticketTypes.find((type) => type._id.toString() === ticket.type.toString());
+      const cost = ticketType.price * ticket.quantity;
+      totalQuantity += ticket.quantity;
+      totalCost += cost;
+      return {
+        eventId,
+        type: ticket.type,
+        totalCost: cost,
+        quantity: ticket.quantity,
+        purchaseDate: new Date(),
+      };
+    });
+
+    console.log(`Total cost before discount: ${totalCost} QAR`);
+
+    // Apply promo code discount if provided
+    if (promoCode) {
+      const promo = await PromoCode.findOne({ code: promoCode, isActive: true });
+
+      if (promo) {
+        // Check if promo code has expired
+        if (promo.expiresAt && promo.expiresAt < new Date()) {
+          return next(new AppError(400, "Promo code expired"));
+        }
+
+        // Check if promo code usage limit is exceeded
+        if (promo.maxUses <= promo.currentUses) {
+          return next(new AppError(400, "Promo code usage limit exceeded"));
+        }
+
+        const discount = (promo.discountPercentage / 100) * totalCost;
+        console.log(`Discount applied: ${discount} QAR`);
+        totalCost -= discount;
+        console.log(`Total cost after discount: ${totalCost} QAR`);
+
+        // Increment the promo code usage count
+        promo.currentUses += 1;
+        await promo.save();
+      } else {
+        return next(new AppError(400, "Invalid promo code"));
+      }
+    }
+
+    // Save tickets and send email
+    const event = await Event.findById(new mongoose.Types.ObjectId(eventId));
+    if (!event) {
+      return next(new AppError(404, "Event not found"));
+    }
+
+    // Save tickets to the database
+    await Ticket.insertMany(ticketDetails);
+
+    const emailContent = `
+      <h3 style="font-family: Arial, sans-serif; color: #333;">
+          Hello ${emailId.split("@")[0]},
+      </h3>
+      <p style="font-family: Arial, sans-serif; color: #333;">
+          Thank you for purchasing tickets for ${event.name}. We are thrilled to have you join us for this exciting event.
+      </p>
+      <p style="font-family: Arial, sans-serif; color: #333;">
+          Here are the purchase details:
+      </p>
+      <h4 style="font-family: Arial, sans-serif; color: #333;">
+          Event Name: ${event.name}
+      </h4>
+      <h4 style="font-family: Arial, sans-serif; color: #333;">
+          Number Of Tickets: ${totalQuantity}
+      </h4>
+      <h4 style="font-family: Arial, sans-serif; color: #333;">
+          Total Amount: ${totalCost} QAR
+      </h4>
+      <br>
+      ${signature}
+    `;
+
+    await transporter.sendMail({
+      to: emailId,
+      subject: `Hello ${emailId.split("@")[0]}, Thank you for purchasing ${event.name} tickets`,
+      html: emailContent,
+    });
+
+    res.status(201).json({ message: "Ticket booked successfully" });
+
+  } catch (error) {
+    console.error("Error in booking tickets:", error); // Log the error for debugging
+    return next(new AppError(500, "Internal Server Error"));
   }
-
-  const ticketTypes = await TicketType.find({ _id: { $in: tickets.map((ticket) => ticket.type) } });
-
-  if (ticketTypes.length !== tickets.length) return next(new AppError(400, "Invalid tickets"));
-
-  const test = tickets.map((ticket) => {
-    return {
-      eventId,
-      type: ticket.type,
-      totalCost:
-        ticketTypes.find((type) => type._id.toString() === ticket.type.toString()).price *
-        ticket.quantity,
-      quantity: ticket.quantity,
-      purchaseDate: new Date(),
-    };
-  });
-
-  let totalQuantity = 0,
-    totalCost = 0;
-  for (t of test) {
-    totalQuantity += t.quantity;
-    totalCost += t.totalCost;
-  }
-
-  // const user = await User.findById(new mongoose.Types.ObjectId(buyerId));
-  const event = await Event.findById(new mongoose.Types.ObjectId(eventId));
-
-  res.status(201).json({ message: "ticket booked successfully" });
-  const emailContent = `
-  <h3 style="font-family: Arial, sans-serif; color: #333;">
-      Hello ${emailId.split("@")[0]},
-  </h3>
-  <p style="font-family: Arial, sans-serif; color: #333;">
-      Thank you for purchasing tickets for ${
-        event.name
-      }. We are thrilled to have you join us for this exciting event. 
-      Your support means a lot to us, and we are committed to providing you with an unforgettable experience. 
-      From the moment you arrive, we hope you enjoy the vibrant atmosphere, engaging performances, and the overall ambiance 
-      that makes this event special. We look forward to seeing you and hope you have a fantastic time!
-  </p>
-  <p style="font-family: Arial, sans-serif; color: #333;">
-      Here are the purchase details:
-  </p>
-  <h4 style="font-family: Arial, sans-serif; color: #333;">
-      Event Name: ${event.name}
-  </h4>
-  <h4 style="font-family: Arial, sans-serif; color: #333;">
-      Number Of Tickets: ${totalQuantity}
-  </h4>
-  <h4 style="font-family: Arial, sans-serif; color: #333;">
-      Total Amount: ${totalCost}  QAR
-  </h4>
-  
-  <br>
-  ${signature}
-`;
-
-  await transporter.sendMail({
-    to: emailId,
-    subject: `Hello ${emailId.split("@")[0]}, Thank you for purchasing ${event.name} tickets`,
-    html: emailContent,
-  });
-  console.log("Email has been sent");
 });

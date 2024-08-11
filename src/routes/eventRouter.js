@@ -22,4 +22,8 @@ router.route("/single-event/:eventId").get(eventController.getEventByEventId);
 router.route("/edit/:eventId").put(eventController.editEventById);
 router.route("/edit/:eventId/:field").put(eventController.deleteFieldFromEvent);
 
+
+router.route("/add-promo").post(eventController.addPromoCode);
+router.route("/update-promo/:promoId").put(eventController.updatePromoCode)
+router.route("/delete-promo/:promoId").delete(eventController.deletePromoCode);
 module.exports = router;

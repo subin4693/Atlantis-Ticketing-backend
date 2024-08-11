@@ -1,6 +1,6 @@
 const Event = require("../models/eventModel");
 const Booking = require("../models/bookingModel");
-
+const Promo=require("../models/promoCode")
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
@@ -455,4 +455,110 @@ exports.deleteFieldFromEvent = catchAsync(async (req, res, next) => {
   );
 
   res.status(200).json({ message: "Field removed successfully", event: updatedEvent });
+});
+
+
+
+// code
+// "PROMO2024"
+// discountPercentage
+// 90
+// expiresAt
+// 2024-12-31T23:59:59.000+00:00
+// isActive
+// true
+
+exports.addPromoCode = catchAsync(async (req, res, next) => {
+  try {
+      const { code, discountPercentage, expiresAt, isActive, maxUses } = req.body;
+
+      if (!code || !discountPercentage || !expiresAt || isActive === undefined || maxUses === undefined) {
+          return res.status(400).json({
+              message: "Please provide all required details, including maxUses."
+          });
+      }
+
+      const expiresDate = new Date(expiresAt);
+      if (isNaN(expiresDate.getTime())) {
+          return res.status(400).json({
+              message: "Invalid expiry date format."
+          });
+      }
+
+      if (typeof maxUses !== 'number' || maxUses <= 0 || !Number.isInteger(maxUses)) {
+        return res.status(400).json({
+            message: "Invalid maxUses value. It must be a positive integer."
+        });
+    }
+    
+
+      const newPromoCode = new Promo({
+          code,
+          discountPercentage,
+          expiresAt: expiresDate,
+          isActive,
+          maxUses,
+          currentUses: 0 
+      });
+
+      const savedPromoCode = await newPromoCode.save();
+
+      res.status(201).json({
+          message: "Promo code created successfully.",
+          voucher: savedPromoCode
+      });
+
+  } catch (error) {
+      console.error("Error creating promo code:", error);
+      res.status(500).json({
+          message: "Internal server error."
+      });
+  }
+});
+
+exports.updatePromoCode = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const { code, discountPercentage, expiresAt, isActive } = req.body;
+
+  if (!code && discountPercentage === undefined && !expiresAt && isActive === undefined) {
+    return res.status(400).json({
+      message: "No fields to update. Please provide at least one field to update."
+    });
+  }
+
+  const promoCode = await Promo.findById(id);
+  if (!promoCode) {
+    return res.status(404).json({
+      message: "Promo code not found"
+    });
+  }
+  if (code) promoCode.code = code;
+  if (discountPercentage !== undefined) promoCode.discountPercentage = discountPercentage;
+  if (expiresAt) promoCode.expiresAt = expiresAt;
+  if (isActive !== undefined) promoCode.isActive = isActive;
+
+  await promoCode.save();
+
+  res.status(200).json({
+    message: "Promo code updated successfully",
+    voucher: promoCode
+  });
+});
+exports.deletePromoCode = catchAsync(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const promoCode = await Promo.findByIdAndDelete(id);
+    if (!promoCode) {
+      return res.status(404).json({
+        message: "Promo code not found"
+      });
+    }
+    res.status(200).json({
+      message: "Promo code deleted successfully",
+      deletedPromoCode: promoCode
+    });
+  } catch (error) {
+    console.error("Error deleting promo code:", error);
+    return next(new AppError(500, "Internal Server Error"));
+  }
 });
