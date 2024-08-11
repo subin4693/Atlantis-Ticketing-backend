@@ -469,7 +469,7 @@ exports.deleteFieldFromEvent = catchAsync(async (req, res, next) => {
 // true
 
 exports.addPromoCode = catchAsync(async (req, res, next) => {
-  try {
+  
     const { code, discountPercentage, expiresAt, isActive, maxUses } = req.body;
 
     if (!code || !discountPercentage || !expiresAt || isActive === undefined || maxUses === undefined) {
@@ -507,12 +507,12 @@ exports.addPromoCode = catchAsync(async (req, res, next) => {
       voucher: savedPromoCode
     });
 
-  } catch (error) {
+
     console.error("Error creating promo code:", error);
     res.status(500).json({
       message: "Internal server error."
     });
-  }
+  
 });
 
 
