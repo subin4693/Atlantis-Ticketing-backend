@@ -470,52 +470,48 @@ exports.deleteFieldFromEvent = catchAsync(async (req, res, next) => {
 
 exports.addPromoCode = catchAsync(async (req, res, next) => {
   try {
-      const { code, discountPercentage, expiresAt, isActive, maxUses } = req.body;
+    const { code, discountPercentage, expiresAt, isActive, maxUses } = req.body;
 
-      // Check for missing fields
-      if (!code || discountPercentage === undefined || !expiresAt || isActive === undefined || maxUses === undefined) {
-           return res.status(400).json({
-              message: "Please provide all required details, including maxUses."
-          });
-      }
-
-      // Validate expiry date
-      const expiresDate = new Date(expiresAt);
-      if (isNaN(expiresDate.getTime())) {
-           return res.status(400).json({
-              message: "Invalid expiry date format."
-          });
-      }
-
-      // Validate maxUses
-      if (typeof maxUses !== 'number' || maxUses <= 0 || !Number.isInteger(maxUses)) {
-         return res.status(400).json({
-            message: "Invalid maxUses value. It must be a positive integer."
-        });
+    if (!code || !discountPercentage || !expiresAt || isActive === undefined || maxUses === undefined) {
+      return res.status(400).json({
+        message: "Please provide all required details, including maxUses."
+      });
     }
-    
-      // Create and save the new promo code
-      const newPromoCode = new Promo({
-          code,
-          discountPercentage,
-          expiresAt: expiresDate,
-          isActive,
-          maxUses,
-          currentUses: 0 
-      });
 
-      const savedPromoCode = await newPromoCode.save();
-
-      return res.status(201).json({
-          message: "Promo code created successfully.",
-          voucher: savedPromoCode
+    const expiresDate = new Date(expiresAt);
+    if (isNaN(expiresDate.getTime())) {
+      return res.status(400).json({
+        message: "Invalid expiry date format."
       });
+    }
+
+    if (typeof maxUses !== 'number' || maxUses <= 0 || !Number.isInteger(maxUses)) {
+      return res.status(400).json({
+        message: "Invalid maxUses value. It must be a positive integer."
+      });
+    }
+
+    const newPromoCode = new Promo({
+      code,
+      discountPercentage,
+      expiresAt: expiresDate,
+      isActive,
+      maxUses,
+      currentUses: 0 
+    });
+
+    const savedPromoCode = await newPromoCode.save();
+
+    res.status(201).json({
+      message: "Promo code created successfully.",
+      voucher: savedPromoCode
+    });
 
   } catch (error) {
-      console.error("Error creating promo code:", error);
-      return res.status(500).json({
-          message: "Internal server error."
-      });
+    console.error("Error creating promo code:", error);
+    res.status(500).json({
+      message: "Internal server error."
+    });
   }
 });
 
